@@ -3,6 +3,7 @@ import type { Dashboard, MatchResponse, Settings } from '../../types/api'
 import { ApiError } from '../client'
 import { repositoryFixtures } from './repositories'
 import { coachFixture, matchFixture, noKeywordsCoachFixture, noKeywordsFixture, zeroCoachFixture, zeroMatchFixture } from './career'
+import { chatFixtures, savedChatFixtures, unknownChatFixture } from './chat'
 
 export const dashboardFixture: Dashboard = dashboardJson
 let settings: Settings = { default_username: 'octocat', theme: 'system' }
@@ -52,6 +53,15 @@ export async function mockRequest<T>(path: string, init?: RequestInit): Promise<
     const result: MatchResponse = { match: structuredClone(fixture.match), job_description: text, meta: structuredClone(dashboardFixture.meta) }
     savedMatches[username] = result
     return result as T
+  }
+  if (url.pathname.endsWith('/chat')) {
+    const { message } = JSON.parse(String(init?.body)) as { message: string }
+    const text = message.trim()
+    if (!text) throw new ApiError({ code: 'invalid_input', message: 'Enter a question before sending.', field: 'message' }, 422)
+    if (text.length > 2000) throw new ApiError({ code: 'payload_too_large', message: 'Messages must contain at most 2,000 characters.', field: 'message', max_chars: 2000 }, 413)
+    if (text === 'error') throw new ApiError({ code: 'not_cached', message: 'No cached portfolio is available. Load the developer dashboard first.' }, 404)
+    const saved = savedMatches[username]
+    return structuredClone((saved && savedChatFixtures[String(saved.match.score)]?.[text]) || chatFixtures[text] || unknownChatFixture) as T
   }
   throw new ApiError({ code: 'http_error', message: 'This preview endpoint is not available yet.' }, 404)
 }

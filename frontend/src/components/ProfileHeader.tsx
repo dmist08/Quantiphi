@@ -1,4 +1,5 @@
 import { ArrowUpRight, BookOpen, Github, Star, Users } from 'lucide-react'
+import { useState } from 'react'
 import type { Dashboard, MatchResult } from '../types/api'
 
 export function MatchBadge({ match }: { match: MatchResult | null }) {
@@ -8,8 +9,9 @@ export function MatchBadge({ match }: { match: MatchResult | null }) {
 
 export function ProfileHeader({ data }: { data: Dashboard }) {
   const { profile, stats } = data
+  const [avatarFailed, setAvatarFailed] = useState(false)
   return <section className="panel profile-panel" aria-labelledby="profile-name"><div className="profile-banner"><span className="profile-label"><Github size={14} /> PUBLIC DEVELOPER PROFILE</span><span className="banner-decoration">{'{ }'}</span></div>
-    <div className="profile-content"><div className="profile-top"><div className="avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt={`${profile.login}'s avatar`} /> : <Github size={36} />}</div>{profile.url && <a className="button secondary small" href={profile.url} target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={14} /></a>}</div>
+    <div className="profile-content"><div className="profile-top"><div className="avatar">{profile.avatar_url && !avatarFailed ? <img src={profile.avatar_url} alt={`${profile.login}'s avatar`} onError={() => setAvatarFailed(true)} /> : <Github size={36} aria-label="GitHub profile" />}</div>{profile.url && <a className="button secondary small" href={profile.url} target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={14} /></a>}</div>
       <h2 id="profile-name">{profile.name ?? profile.login}</h2><p className="handle">@{profile.login}</p><p className="bio">{profile.bio ?? 'Building a story through public code.'}</p>
       <div className="profile-stats"><div><Users size={16} /><strong>{profile.followers.toLocaleString()}</strong><span>Followers</span></div><div><Star size={16} /><strong>{stats.total_stars.toLocaleString()}</strong><span>Total stars</span></div><div><BookOpen size={16} /><strong>{stats.public_repos.toLocaleString()}</strong><span>Repositories</span></div></div>
     </div>

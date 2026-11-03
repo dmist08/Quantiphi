@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, ArrowUpRight, Check, Compass, FileText, Sparkles } from 'lucide-react'
 import { api } from '../api/client'
-import type { Dashboard, GapCoach, MatchResponse, MatchResult } from '../types/api'
+import type { GapCoach, MatchResponse, MatchResult } from '../types/api'
 import { ErrorNotice, Loading, MetaNotice } from './Feedback'
 
 function Score({ match }: { match: Pick<MatchResult, 'score' | 'status'> }) {
@@ -72,5 +72,3 @@ export function CareerPanel({ username, initialDescription, initialMatch, onMatc
     </div><div className="career-footnote">Language coverage shows public code evidence. It does not measure proficiency or hiring suitability.</div>
   </section>
 }
-
-export type CareerDashboard = Pick<Dashboard, 'match' | 'job_description'>
