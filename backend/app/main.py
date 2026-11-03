@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from .config import Settings, get_settings
 from .db import init_db
 from .errors import register_error_handlers
+from .routers import chat as chat_router
 from .routers import dashboard as dashboard_router
 from .routers import match as match_router
 from .routers import settings as settings_router
@@ -29,5 +30,6 @@ def create_app(settings: Settings | None = None, github_client: GitHubClient | N
 
     app.include_router(dashboard_router.router)
     app.include_router(match_router.router)
+    app.include_router(chat_router.router)
     app.include_router(settings_router.router)
     return app
