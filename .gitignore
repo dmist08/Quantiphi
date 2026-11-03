@@ -19,6 +19,7 @@ env/
 # Node
 node_modules/
 dist/
+*.tsbuildinfo
 
 # Editors / OS
 .vscode/
