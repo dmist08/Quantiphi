@@ -1,5 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+# Generated browser reports stay local.
 playwright-report/
 test-results/

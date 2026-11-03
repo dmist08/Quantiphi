@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ChatMessage, ChatResponse, Dashboard, GapCoach, MatchResponse, Repositories, RepoQuery, Settings } from '../types/api'
+import type { ApiErrorBody, ChatMessage, ChatResponse, Dashboard, GapCoach, MatchResponse, PortfolioHealth, Repositories, RepoQuery, Settings } from '../types/api'
 
 export const useMocks = import.meta.env.VITE_USE_MOCKS === 'true'
 
@@ -39,6 +39,7 @@ export const api = {
   settings: (signal?: AbortSignal) => request<Settings>('/settings', { signal }),
   saveSettings: (settings: Settings, signal?: AbortSignal) => request<Settings>('/settings', { method: 'PUT', body: JSON.stringify(settings), signal }),
   dashboard: (username: string, refresh = false, signal?: AbortSignal) => request<Dashboard>(`${userPath(username)}/dashboard?refresh=${refresh}`, { signal }),
+  portfolioHealth: (username: string, signal?: AbortSignal) => request<PortfolioHealth>(`${userPath(username)}/portfolio-health`, { signal }),
   repositories: (username: string, query: RepoQuery, signal?: AbortSignal) => {
     const params = new URLSearchParams({ sort: query.sort, language: query.language, include_forks: String(query.include_forks), page: String(query.page), page_size: String(query.page_size) })
     return request<Repositories>(`${userPath(username)}/repositories?${params}`, { signal })

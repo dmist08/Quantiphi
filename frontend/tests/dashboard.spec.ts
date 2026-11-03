@@ -3,6 +3,7 @@ import dashboard from '../src/api/fixtures/dashboard.json' with { type: 'json' }
 import { repositoryFixtures } from '../src/api/fixtures/repositories'
 import { noKeywordsCoachFixture, noKeywordsFixture, zeroMatchFixture } from '../src/api/fixtures/career'
 import { chatFixtures } from '../src/api/fixtures/chat'
+import { healthFixture, noReposHealthFixture } from '../src/api/fixtures/health'
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', error => console.error(`Browser error: ${error.message}`))
@@ -25,6 +26,7 @@ async function serveApi(page: Page, options: { theme?: string; defaultUsername?:
       const key = `${url.searchParams.get('sort')}|${url.searchParams.get('language')}|${url.searchParams.get('include_forks')}|${url.searchParams.get('page')}`
       return route.fulfill({ json: repositoryFixtures[key] ?? repositoryFixtures['stars||false|1'] })
     }
+    if (url.pathname.endsWith('/portfolio-health')) return route.fulfill({ json: options.empty ? noReposHealthFixture : healthFixture })
     return route.fulfill({ status: 404, json: { error: { code: 'http_error', message: 'No fixture for this request.' } } })
   })
 }
@@ -177,4 +179,54 @@ test('keeps the full heatmap scrollable inside a narrow mobile layout', async ({
   await page.screenshot({ path: 'test-results/mobile.png', fullPage: true })
   await page.setViewportSize({ width: 320, height: 740 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
+test('renders health loading, API error and retry, server check points and actions', async ({ page }) => {
+  await serveApi(page)
+  let release: () => void = () => {}
+  const gate = new Promise<void>(resolve => { release = resolve })
+  let fail = true
+  await page.route('**/api/users/*/portfolio-health', async route => {
+    await gate
+    if (fail) return route.fulfill({ status: 404, json: { error: { code: 'not_cached', message: 'Load the dashboard first.' } } })
+    return route.fulfill({ json: { ...healthFixture, score: 69, checks: [{ ...healthFixture.checks[0], score: 18.8, detail: '<b>3 of 4 repos</b>', suggestion: 'Add a short description.' }], top_actions: ['Add a short description.'] } })
+  })
+  await page.goto('/')
+  const health = page.locator('#portfolio-health')
+  await expect(health.getByRole('status')).toContainText('Loading portfolio health…')
+  release()
+  await expect(health.getByRole('alert')).toContainText('Load the dashboard first.')
+  fail = false
+  await health.getByRole('button', { name: 'Try again' }).click()
+  await expect(health.getByLabel('Portfolio health: 69 out of 100')).toBeVisible()
+  await expect(health.getByRole('meter')).toHaveAttribute('value', '18.8')
+  await expect(health.locator('.health-actions')).toContainText('Add a short description.')
+  await expect(health.locator('.health-limitation')).toHaveText(healthFixture.limitation)
+  await expect(health.getByText('<b>3 of 4 repos</b>', { exact: true })).toBeVisible()
+  await expect(health.locator('b')).toHaveCount(0)
+})
+
+test('health no_repos and nullable score never become zero', async ({ page }) => {
+  await serveApi(page, { empty: true })
+  await page.goto('/')
+  const health = page.locator('#portfolio-health')
+  await expect(health.getByText('Score unavailable', { exact: true })).toBeVisible()
+  await expect(health.getByText('No original public repositories to assess yet.')).toBeVisible()
+  await expect(health.locator('.health-actions')).toContainText(noReposHealthFixture.top_actions[0])
+  await expect(health.locator('.health-score')).toHaveCount(0)
+  await page.route('**/api/users/*/portfolio-health', route => route.fulfill({ json: { ...healthFixture, score: null } }))
+  await page.reload()
+  await expect(health.getByText('The service did not provide a score.')).toBeVisible()
+  await expect(health.locator('.health-score')).toHaveCount(0)
+})
+
+test('hides zero-percent languages without changing server percentages', async ({ page }) => {
+  await serveApi(page)
+  await page.route('**/api/users/*/dashboard?*', route => route.fulfill({ json: { ...dashboard, languages: [...dashboard.languages, { name: 'Shell', color: '#89e051', bytes: 3, percent: 0 }] } }))
+  await page.goto('/')
+  await expect(page.locator('.language-legend').getByText('Shell')).toHaveCount(0)
+  await expect(page.locator('.language-legend').getByText('0%', { exact: true })).toHaveCount(0)
+  await expect(page.locator('.language-legend').getByText('48%', { exact: true })).toBeVisible()
+  await expect(page.locator('.language-legend').getByText('32%', { exact: true })).toBeVisible()
+  await expect(page.locator('.recharts-pie-sector')).toHaveCount(3)
 })

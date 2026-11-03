@@ -5,7 +5,7 @@ import type { ChatMessage, ChatResponse } from '../types/api'
 import { ErrorNotice } from './Feedback'
 
 interface DisplayMessage extends ChatMessage { id: number; response?: ChatResponse }
-const initialSuggestions = ['What are my top languages?', 'Which are my best repos?', 'What is my current streak?', 'What is my match score?', 'What are my gaps?']
+const initialSuggestions = ['What are my top languages?', 'Which are my best repos?', 'What is my current streak?', 'What is my match score?', 'What are my gaps?', 'How can I improve my portfolio?']
 
 export function ChatPanel({ username }: { username: string }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([])

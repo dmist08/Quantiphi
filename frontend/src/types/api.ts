@@ -75,3 +75,21 @@ export interface ChatResponse {
   suggestions: string[]
 }
 export interface Settings { default_username: string | null; theme: 'light' | 'dark' | 'system' }
+
+export interface PortfolioHealth {
+  status: 'ok' | 'no_repos'
+  score: number | null
+  max_score: number
+  checks: {
+    key: 'descriptions' | 'recent_projects' | 'consistency' | 'profile'
+    label: string
+    score: number
+    max_score: number
+    detail: string
+    suggestion: string | null
+  }[]
+  top_actions: string[]
+  limitation: string
+  as_of: string
+  meta: Meta
+}

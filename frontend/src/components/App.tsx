@@ -9,6 +9,7 @@ import { ContributionHeatmap } from './ContributionHeatmap'
 import { RepositoriesPanel } from './RepositoriesPanel'
 import { CareerPanel } from './CareerPanel'
 import { ChatPanel } from './ChatPanel'
+import { PortfolioHealthPanel } from './PortfolioHealthPanel'
 import { SettingsDialog } from './SettingsDialog'
 
 export function App() {
@@ -73,7 +74,7 @@ export function App() {
         {!!error && <ErrorNotice error={error} retry={() => load()} />}
         {loading && !data && <Loading />}
         {!username && settings && <section className="panel welcome"><Github size={42} /><h2>Your portfolio starts here</h2><p>Enter a GitHub username above to explore public work, contribution activity, and career fit.</p><button className="button primary" onClick={() => { setSearch('octocat'); setUsername('octocat') }}>Explore octocat <ArrowRight size={16} /></button></section>}
-        {data && <div aria-busy={loading}>{loading && <div className="refresh-status" role="status">Refreshing portfolio data…</div>}<MetaNotice meta={data.meta} /><MatchBadge match={data.match} /><div className="overview-grid"><ProfileHeader data={data} /><LanguageChart languages={data.languages} /></div><ContributionHeatmap data={data} /><RepositoriesPanel key={`repos-${data.profile.login}-${data.meta.fetched_at}`} username={data.profile.login} /><CareerPanel key={`career-${data.profile.login}-${data.meta.fetched_at}`} username={data.profile.login} initialDescription={data.job_description} initialMatch={data.match} onMatch={result => setData(current => current ? { ...current, match: result.match, job_description: result.job_description } : current)} /><ChatPanel key={`chat-${data.profile.login}`} username={data.profile.login} /></div>}
+        {data && <div aria-busy={loading}>{loading && <div className="refresh-status" role="status">Refreshing portfolio data…</div>}<MetaNotice meta={data.meta} /><MatchBadge match={data.match} /><div className="overview-grid"><ProfileHeader data={data} /><LanguageChart languages={data.languages} /></div><ContributionHeatmap data={data} /><PortfolioHealthPanel key={`health-${data.profile.login}-${data.meta.fetched_at}`} username={data.profile.login} /><RepositoriesPanel key={`repos-${data.profile.login}-${data.meta.fetched_at}`} username={data.profile.login} /><CareerPanel key={`career-${data.profile.login}-${data.meta.fetched_at}`} username={data.profile.login} initialDescription={data.job_description} initialMatch={data.match} onMatch={result => setData(current => current ? { ...current, match: result.match, job_description: result.job_description } : current)} /><ChatPanel key={`chat-${data.profile.login}`} username={data.profile.login} /></div>}
         <footer className="page-footer"><span>Built around your public work.</span><span>Gitfolio <span className="accent">✦</span> A clearer developer story</span></footer>
       </main>
     </div>

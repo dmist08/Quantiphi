@@ -4,6 +4,7 @@ import { ApiError } from '../client'
 import { repositoryFixtures } from './repositories'
 import { coachFixture, matchFixture, noKeywordsCoachFixture, noKeywordsFixture, zeroCoachFixture, zeroMatchFixture } from './career'
 import { chatFixtures, savedChatFixtures, unknownChatFixture } from './chat'
+import { healthFixture, noReposHealthFixture } from './health'
 
 export const dashboardFixture: Dashboard = dashboardJson
 let settings: Settings = { default_username: 'octocat', theme: 'system' }
@@ -40,6 +41,12 @@ export async function mockRequest<T>(path: string, init?: RequestInit): Promise<
     const data = structuredClone(repositoryFixtures[key] ?? repositoryFixtures['stars||false|1'])
     if (username === 'empty') { data.items = []; data.total = 0; data.total_pages = 0; data.available_languages = [] }
     if (username === 'stale') data.meta = { ...data.meta, stale: true, warning: 'GitHub is temporarily unavailable. Showing saved repositories.', error_code: 'github_unavailable' }
+    return data as T
+  }
+  if (url.pathname.endsWith('/portfolio-health')) {
+    if (username === 'health-error') throw new ApiError({ code: 'not_cached', message: 'No cached dashboard is available. Load the developer dashboard and try again.' }, 404)
+    const data = structuredClone(username === 'empty' ? noReposHealthFixture : healthFixture)
+    if (username === 'stale') data.meta = { ...data.meta, stale: true, warning: 'GitHub is temporarily unavailable. Showing saved portfolio health.', error_code: 'github_unavailable' }
     return data as T
   }
   if (url.pathname.endsWith('/match') || url.pathname.endsWith('/gap-coach')) {
