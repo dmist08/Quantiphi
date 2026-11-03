@@ -5,8 +5,9 @@ answer is built only from cached GitHub data and the saved job description.
 No external AI service is used. Each answer carries the evidence it was built from.
 """
 import re
+from datetime import date, datetime, timezone
 
-from . import matcher, stats
+from . import matcher, portfolio_health, stats
 
 SUGGESTIONS = [
     "What are my top languages?",
@@ -18,13 +19,18 @@ SUGGESTIONS = [
     "Give me a profile summary.",
     "What is my match score?",
     "What are my gaps for this job?",
+    "How healthy is my portfolio?",
 ]
 
 CAPABILITIES = (
     "I answer questions using your cached GitHub data: top languages, best repos, repos using a "
-    "specific language, contribution streaks, stars, followers, a profile summary, and (after you save "
-    "a job description) your match score and gaps. Try one of the suggested questions."
+    "specific language, contribution streaks, stars, followers, a profile summary, portfolio health "
+    "and how to improve it, and (after you save a job description) your match score and gaps. "
+    "Try one of the suggested questions."
 )
+
+_JOB_WORDS = r"\b(?:job|role|jd|position|vacancy)\b"
+_IMPROVE_WORDS = (r"\bimprov", r"\bbetter\b", r"\bpolish", r"stand out", r"\bstrengthen", r"\bwhat should i (?:do|fix)")
 
 # Short language names are only matched with exact casing ("Go", "C", "R") to avoid
 # matching ordinary words like "go".
@@ -58,9 +64,13 @@ def _mentioned_language(message: str, repos: list[dict]) -> str | None:
 
 def detect_intent(message: str, repos: list[dict]) -> tuple[str, str | None]:
     text = message.lower()
+    if _has(text, r"\bhealth"):
+        return "portfolio_health", None
     if _has(text, r"\bmatch", r"\bscore", r"compatib", r"\bfit\b", r"percent"):
         return "match_score", None
-    if _has(text, r"\bgaps?\b", r"\bmissing\b", r"\black", r"\bweak", r"\bimprove"):
+    if _has(text, *_IMPROVE_WORDS) and not _has(text, _JOB_WORDS):
+        return "portfolio_health", None
+    if _has(text, r"\bgaps?\b", r"\bmissing\b", r"\black", r"\bweak", r"\bimprov"):
         return "gaps", None
     if _has(text, r"streak", r"consecutive", r"contribut", r"active days?", r"\bcommits?\b", r"best day"):
         return "streaks", None
@@ -204,7 +214,21 @@ def _gaps(data: dict, jd: str | None) -> tuple[str, list[dict]]:
     return answer, evidence
 
 
-def respond(message: str, data: dict, job_description: str | None) -> dict:
+def _portfolio_health(data: dict, today: date) -> tuple[str, list[dict]]:
+    result = portfolio_health.evaluate(data, today)
+    if result["score"] is None:
+        return "There are no original (non-fork) public repositories to evaluate yet. " + result["top_actions"][0], []
+    answer = f"Your portfolio health score is {result['score']}/100."
+    if result["top_actions"]:
+        steps = " ".join(f"{i}) {action}" for i, action in enumerate(result["top_actions"], 1))
+        answer += f" Top actions: {steps}"
+    answer += " " + result["limitation"]
+    evidence = [_evidence(c["label"], f"{c['score']}/{c['max_score']} · {c['detail']}") for c in result["checks"]]
+    return answer, evidence
+
+
+def respond(message: str, data: dict, job_description: str | None, today: date | None = None) -> dict:
+    today = today or datetime.now(timezone.utc).date()
     intent, language = detect_intent(message, data["repositories"])
     if intent == "top_languages":
         answer, evidence = _top_languages(data)
@@ -224,6 +248,8 @@ def respond(message: str, data: dict, job_description: str | None) -> dict:
         answer, evidence = _match_score(data, job_description)
     elif intent == "gaps":
         answer, evidence = _gaps(data, job_description)
+    elif intent == "portfolio_health":
+        answer, evidence = _portfolio_health(data, today)
     else:
         answer, evidence = CAPABILITIES, []
     return {"intent": intent, "answer": answer, "evidence": evidence, "suggestions": SUGGESTIONS}

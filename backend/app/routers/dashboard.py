@@ -1,9 +1,11 @@
-"""Dashboard and repository listing endpoints."""
+"""Dashboard, repository listing and portfolio health endpoints."""
+from datetime import date, datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
-from ..services import matcher, stats
+from ..schemas import validate_username
+from ..services import matcher, portfolio_health, stats
 from ..services.cache_service import CacheService
 
 router = APIRouter(prefix="/api/users/{username}", tags=["dashboard"])
@@ -11,6 +13,11 @@ router = APIRouter(prefix="/api/users/{username}", tags=["dashboard"])
 
 def get_cache(request: Request) -> CacheService:
     return request.app.state.cache
+
+
+def get_today() -> date:
+    """Current UTC date; overridden in tests via app.dependency_overrides."""
+    return datetime.now(timezone.utc).date()
 
 
 @router.get("/dashboard")
@@ -48,3 +55,10 @@ async def repositories(
         include_forks=include_forks, page=page, page_size=page_size,
     )
     return {**result, "meta": data["meta"]}
+
+
+@router.get("/portfolio-health")
+def portfolio_health_endpoint(username: str, request: Request, today: date = Depends(get_today)) -> dict:
+    validate_username(username)
+    data = get_cache(request).require_cached(username)  # cached data only
+    return {**portfolio_health.evaluate(data, today), "meta": data["meta"]}

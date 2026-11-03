@@ -319,6 +319,106 @@ always produce the same output.
 
 ---
 
+### `GET /api/users/{username}/portfolio-health`
+
+How well the public profile is presented, computed from **cached data only** (no GitHub call). Load the
+dashboard first, otherwise 404 `not_cached`. "Original" repo = owned and not a fork. "Active" = original and not archived.
+
+Four checks, 25 points each:
+
+| `key` | Points |
+|-------|--------|
+| `descriptions` | 25 × (active original repos with a non-empty description ÷ active original repos) |
+| `recent_projects` | 25 × (active original repos pushed within the last 180 days, inclusive ÷ active original repos) |
+| `consistency` | 25 × min(active contribution days ÷ 100, 1) |
+| `profile` | 12.5 for a non-empty bio + 12.5 for at least 3 original repos (archived count) |
+
+If all original repos are archived, `descriptions` and `recent_projects` score 0. If there are no original repos,
+`status` is `"no_repos"`, `score` is `null` and `checks` is `[]`.
+
+**200**
+```json
+{
+  "status": "ok",
+  "score": 69,
+  "max_score": 100,
+  "checks": [
+    {
+      "key": "descriptions",
+      "label": "Repository descriptions",
+      "score": 18.8,
+      "max_score": 25,
+      "detail": "3 of 4 active original repos have a description.",
+      "suggestion": "Add a one-line description to c."
+    },
+    {
+      "key": "recent_projects",
+      "label": "Recently updated projects",
+      "score": 12.5,
+      "max_score": 25,
+      "detail": "2 of 4 active original repos were pushed in the last 180 days.",
+      "suggestion": "Push an update to an older project you want to showcase, or archive ones you no longer maintain."
+    },
+    {
+      "key": "consistency",
+      "label": "Contribution consistency",
+      "score": 12.5,
+      "max_score": 25,
+      "detail": "50 active contribution days in the last year (100 earns full points).",
+      "suggestion": "Contribute on more days; small, regular commits count."
+    },
+    {
+      "key": "profile",
+      "label": "Profile completeness",
+      "score": 25.0,
+      "max_score": 25,
+      "detail": "Bio present; 4 original repos (3 needed).",
+      "suggestion": null
+    }
+  ],
+  "top_actions": [
+    "Push an update to an older project you want to showcase, or archive ones you no longer maintain.",
+    "Contribute on more days; small, regular commits count.",
+    "Add a one-line description to c."
+  ],
+  "limitation": "This measures how your public profile is presented and how active it is, not code quality or skill.",
+  "as_of": "2026-11-03",
+  "meta": { "...": "see Meta" }
+}
+```
+
+`no_repos` example:
+```json
+{
+  "status": "no_repos",
+  "score": null,
+  "max_score": 100,
+  "checks": [],
+  "top_actions": ["Publish an original (non-fork) public repository so there is something to evaluate."],
+  "limitation": "This measures how your public profile is presented and how active it is, not code quality or skill.",
+  "as_of": "2026-11-03",
+  "meta": { "...": "see Meta" }
+}
+```
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `status` | `"ok"` \| `"no_repos"` | |
+| `score` | integer 0–100, nullable | Sum of unrounded check points, rounded. `null` iff `status == "no_repos"`. |
+| `max_score` | integer | Always 100. |
+| `checks[]` | array (4 items, or 0 for `no_repos`) | Always in the order `descriptions`, `recent_projects`, `consistency`, `profile`. |
+| `checks[].score` | number | Points rounded to 1 decimal (e.g. `18.8`, `12.5`). |
+| `checks[].max_score` | integer | Always 25. |
+| `checks[].detail` | string | What was measured. |
+| `checks[].suggestion` | string, nullable | `null` when the check has full points. |
+| `top_actions` | string[] (0–3) | Suggestions from the checks with the largest point deficit first (ties keep check order). |
+| `limitation` | string | Always present; show it near the score. |
+| `as_of` | string (date) | The UTC date used for the 180-day window. |
+
+Errors: 422 `invalid_input` (username), 404 `not_cached`.
+
+---
+
 ### `POST /api/users/{username}/chat`
 
 Request:
@@ -351,7 +451,7 @@ The chatbot is rule-based (keyword intents, no AI service or API key). Answers c
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `intent` | string | One of `top_languages`, `best_repos`, `repos_by_language`, `streaks`, `stars`, `followers`, `profile_summary`, `match_score`, `gaps`, `unknown`. |
+| `intent` | string | One of `top_languages`, `best_repos`, `repos_by_language`, `streaks`, `stars`, `followers`, `profile_summary`, `match_score`, `gaps`, `portfolio_health`, `unknown`. |
 | `answer` | string | Plain text. Render as text (no HTML). |
 | `evidence[]` | array of `{label: string, value: string, url: string \| null}` | Facts the answer is built from. |
 | `suggestions` | string[] | Example questions the bot can answer. |
