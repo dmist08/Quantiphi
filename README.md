@@ -2,7 +2,8 @@
 
 A local dashboard that turns a GitHub account into a personal branding page: profile header with a Top
 Languages chart, a contribution heatmap with streaks, repository cards, a **Tech Stack Compatibility** score
-against a job description, a JD gap coach, a portfolio-health check and a rule-based portfolio chatbot.
+against a job description, a JD gap coach, a Portfolio Health check and the Portfolio Assistant, a rule-based
+chatbot.
 
 All business logic (statistics, streaks, language percentages, scoring, validation, sorting, filtering and
 pagination) runs on the server. The React frontend only renders what the API returns.
@@ -98,7 +99,8 @@ npm install
 npm run dev          # http://localhost:5173, proxies /api to http://127.0.0.1:8000
 ```
 
-`npm run build` type-checks and builds; `npm run lint` runs ESLint.
+`npm run build` type-checks and builds; `npm run lint` runs ESLint; `npm run test:e2e` runs the Playwright
+tests (they start their own Vite server on port 4173).
 
 ### Tests
 
@@ -252,7 +254,7 @@ presentation and activity, **not code quality or skill**, and says so in every r
 
 ## Extra features
 
-### 1. Portfolio chatbot
+### 1. Portfolio Assistant (chatbot)
 
 A free, offline-capable, intent-based assistant that answers from cached GitHub data. It needs no AI API key and
 calls no external service; GitHub data still requires `GITHUB_TOKEN` when it isn't cached yet. Keyword rules, in
@@ -288,7 +290,7 @@ portfolio?").
 - **Keyword matching is heuristic.** Unusual phrasing can be missed (e.g. "Spring" alone, without "Boot",
   "Framework" or a list separator), and rare false positives are possible (e.g. "Go, team!").
 - **Bytes favor some files.** Jupyter Notebook output and vendored code inflate language bytes. Tiny languages
-  can round to 0% while still being listed.
+  can round to 0%. The API still lists them; the chart hides 0% slices.
 - **Public, owned repos only.** Private work, organization repos and contributions to other people's repos
   aren't counted as repos (contributions still count toward the calendar).
 - **At most 500 repos** (5 pages × 100, by stars) and the top 10 languages per repo.
