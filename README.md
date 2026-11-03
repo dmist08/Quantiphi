@@ -8,8 +8,6 @@ chatbot.
 All business logic (statistics, streaks, language percentages, scoring, validation, sorting, filtering and
 pagination) runs on the server. The React frontend only renders what the API returns.
 
-> Screenshots: _placeholder — add `docs/screenshots/dashboard.png`, `docs/screenshots/jd-panel.png` and
-> `docs/screenshots/chat.png` here._
 
 ---
 
