@@ -25,11 +25,7 @@ def create_app(settings: Settings | None = None, github_client: GitHubClient | N
 
     @app.get("/api/health", tags=["health"])
     def health() -> dict:
-        return {
-            "status": "ok",
-            "github_token_configured": bool(settings.github_token),
-            "llm_configured": bool(settings.llm_api_key),
-        }
+        return {"status": "ok", "github_token_configured": bool(settings.github_token)}
 
     app.include_router(dashboard_router.router)
     app.include_router(match_router.router)

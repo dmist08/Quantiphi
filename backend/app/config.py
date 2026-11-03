@@ -19,8 +19,6 @@ load_dotenv(BACKEND_DIR / ".env", override=False)
 @dataclass(frozen=True)
 class Settings:
     github_token: str | None
-    llm_api_key: str | None
-    llm_model: str
     database_path: str
     cache_ttl_seconds: int
     refresh_min_interval_seconds: int
@@ -35,8 +33,6 @@ def get_settings() -> Settings:
         db_path = str(BACKEND_DIR / db_path)
     return Settings(
         github_token=os.getenv("GITHUB_TOKEN") or None,
-        llm_api_key=os.getenv("LLM_API_KEY") or None,
-        llm_model=os.getenv("LLM_MODEL", "claude-haiku-5-5"),
         database_path=db_path,
         cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "3600")),
         refresh_min_interval_seconds=int(os.getenv("REFRESH_MIN_INTERVAL_SECONDS", "60")),

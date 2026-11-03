@@ -119,7 +119,7 @@ Each technology appears at most once in `matched` + `missing` combined, however 
 ### `GET /api/health`
 
 ```json
-{ "status": "ok", "github_token_configured": true, "llm_configured": false }
+{ "status": "ok", "github_token_configured": true }
 ```
 
 ---
@@ -332,9 +332,10 @@ Request:
 | Field | Rules |
 |-------|-------|
 | `message` | Trimmed. Empty → 422; > 2000 chars → 413. |
-| `history` | Optional, ≤ 20 items, `role` ∈ `user` \| `assistant`, `content` ≤ 4000 chars. Used only as LLM context. |
+| `history` | Optional, ≤ 20 items, `role` ∈ `user` \| `assistant`, `content` ≤ 4000 chars. Validated but not used by the current intent rules. |
 
-Answers come **only from cached data** (no GitHub call). If the user has never been loaded → 404 `not_cached`.
+The chatbot is rule-based (keyword intents, no AI service or API key). Answers come **only from cached data**
+(no GitHub call). If the user has never been loaded → 404 `not_cached`.
 
 **200**
 ```json
@@ -344,8 +345,7 @@ Answers come **only from cached data** (no GitHub call). If the user has never b
   "evidence": [
     { "label": "Python", "value": "48% · 120000 bytes", "url": null }
   ],
-  "suggestions": ["What are my top languages?", "Which are my best repos?", "What is my current streak?"],
-  "llm_used": false
+  "suggestions": ["What are my top languages?", "Which are my best repos?", "What is my current streak?"]
 }
 ```
 
@@ -355,7 +355,6 @@ Answers come **only from cached data** (no GitHub call). If the user has never b
 | `answer` | string | Plain text. Render as text (no HTML). |
 | `evidence[]` | array of `{label: string, value: string, url: string \| null}` | Facts the answer is built from. |
 | `suggestions` | string[] | Example questions the bot can answer. |
-| `llm_used` | boolean | `true` only if the optional LLM rewrite succeeded. |
 
 ---
 
