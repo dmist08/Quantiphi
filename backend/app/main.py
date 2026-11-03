@@ -8,6 +8,7 @@ from .config import Settings, get_settings
 from .db import init_db
 from .errors import register_error_handlers
 from .routers import dashboard as dashboard_router
+from .routers import match as match_router
 from .routers import settings as settings_router
 from .services.cache_service import CacheService
 from .services.github_client import GitHubClient
@@ -31,5 +32,6 @@ def create_app(settings: Settings | None = None, github_client: GitHubClient | N
         }
 
     app.include_router(dashboard_router.router)
+    app.include_router(match_router.router)
     app.include_router(settings_router.router)
     return app

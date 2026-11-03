@@ -86,6 +86,23 @@ class CacheService:
             raise NotCachedError(f"No cached data for '{username}'. Load the dashboard first.")
         return self._with_meta(cached)
 
+    def save_job_description(self, username: str, job_description: str) -> None:
+        """Keep only the latest JD per user."""
+        with get_conn(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO jd_inputs (username_key, job_description, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(username_key) DO UPDATE SET "
+                "job_description = excluded.job_description, updated_at = excluded.updated_at",
+                (normalize_username(username), job_description, self._clock()),
+            )
+
+    def load_job_description(self, username: str) -> str | None:
+        with get_conn(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT job_description FROM jd_inputs WHERE username_key = ?", (normalize_username(username),)
+            ).fetchone()
+        return row["job_description"] if row else None
+
     def save(self, key: str, data: dict) -> None:
         profile = data["profile"]
         now = self._clock()

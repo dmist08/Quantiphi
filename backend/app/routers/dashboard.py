@@ -3,7 +3,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Query, Request
 
-from ..services import stats
+from ..services import matcher, stats
 from ..services.cache_service import CacheService
 
 router = APIRouter(prefix="/api/users/{username}", tags=["dashboard"])
@@ -17,13 +17,17 @@ def get_cache(request: Request) -> CacheService:
 async def dashboard(username: str, request: Request, refresh: bool = False) -> dict:
     cache = get_cache(request)
     data = await cache.get_user_data(username, refresh=refresh)
+    # The badge is recomputed from the saved JD on every response, so it always
+    # reflects the current cached repositories.
+    job_description = cache.load_job_description(username)
+    match = matcher.analyze(job_description, data["repositories"]) if job_description else None
     return {
         "profile": data["profile"],
         "stats": stats.summary_stats(data),
         "languages": stats.language_breakdown(data["repositories"]),
         "contributions": {"total": data["total_contributions"], **stats.contribution_grid(data["days"])},
-        "match": None,
-        "job_description": None,
+        "match": match,
+        "job_description": job_description,
         "meta": data["meta"],
     }
 
