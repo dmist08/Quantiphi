@@ -34,6 +34,11 @@ class PayloadTooLargeError(AppError):
     code = "payload_too_large"
 
 
+class NotCachedError(AppError):
+    status_code = 404
+    code = "not_cached"
+
+
 class GitHubError(AppError):
     """Base class for failures talking to GitHub."""
 
